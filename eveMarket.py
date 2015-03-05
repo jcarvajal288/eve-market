@@ -1,6 +1,5 @@
 import concurrent.futures
 import csv
-import pdb
 import requests
 import xml.etree.ElementTree as et
 
@@ -29,24 +28,20 @@ def launchQuery(queries, results):
             results.append(data)
 
 def handleResults(marketResults):
-    print("FINISHED")
-
-def countLines(idsFile):
-    return sum(1 for line in idsFile)
+    print("FINISHED: {} items polled".format(len(marketResults)))
 
 def main():
     marketResults = []
-    pdb.set_trace()
     with open("marketOnly_typeids.csv", newline='') as typeidFile:
         typeids = csv.reader(typeidFile)
-        totalids = countLines(typeidFile)
+        totalids = typeids.line_num
         urls = []
         for row in typeids:
             urls.append(constructItemQuery(row[0]))
             if len(urls) is numRequests:
                 launchQuery(urls, marketResults)
                 urls = []
-                print("{}/{} results polled".format(len(marketResults), totalids))
+                print("{}/{} items logged".format(len(marketResults), totalids))
     handleResults(marketResults)
 
 
