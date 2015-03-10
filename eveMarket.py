@@ -1,3 +1,4 @@
+import pdb
 import argparse
 import concurrent.futures
 import csv
@@ -9,7 +10,11 @@ jitaID = 30000142
 numRequests = 20
 
 def getSystemID(systemName):
-    pass
+    with open("mapSolarSystems.csv", newline='') as systemDataFile:
+        systemData = csv.reader(systemDataFile)
+        for system in systemData:
+            if system[3] == systemName:
+                return system[2]
 
 def constructItemQuery(typeID, systemName):
     systemID = getSystemID(systemName)
@@ -20,7 +25,6 @@ def loadUrl(url):
     req = requests.get(url)
     xmlRoot = et.fromstring(req.text)
     return xmlRoot
-    #print(req.text)
 
 def launchQuery(queries, results):
     with concurrent.futures.ThreadPoolExecutor(max_workers=numRequests) as executor:
@@ -35,14 +39,11 @@ def launchQuery(queries, results):
 def handleResults(marketResults):
     print("FINISHED: {} items polled".format(len(marketResults)))
 
-def getSystemID(systemName):
-    pass
-
 def main(typeidFileName, system1, system2):
     marketResults = []
-    with open("marketOnly_typeids.csv", newline='') as typeidFile:
+    with open(typeidFileName, newline='') as typeidFile:
         typeids = csv.reader(typeidFile)
-        totalids = typeids.line_num
+        #totalids = typeids.line_num
         urls = []
         for row in typeids:
             urls.append(constructItemQuery(row[0], system1))
@@ -50,14 +51,15 @@ def main(typeidFileName, system1, system2):
                 launchQuery(urls, marketResults)
                 urls = []
                 print("{}/{} items logged".format(len(marketResults), totalids))
+        else: # launch queries for any leftover items
+            launchQuery(urls, marketResults)
     handleResults(marketResults)
 
 
 if __name__ == "__main__":
-    if sys.argc != 3:
-        print("Usage: python3 eveMarket.py [TYPEID_FILE] [SYSTEM 1] [SYSTEM 2]")
-    else:
-        typeidFile = sys.argv[1]
-        system1 = sys.argv[2]
-        system2 = sys.argv[3]
-        main(typeidFile, system1, system2)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('system1', type=str, help="if just system1 is supplied, will compare buy and sell orders in that system")
+    parser.add_argument('system2', type=str, help="if system2 is supplied as well, will compare the sell orders in those two systems")
+    parser.add_argument('--ids', type=str, help="the list of item ids to use")
+    args = parser.parse_args()
+    main(args.ids, args.system1, args.system2)
